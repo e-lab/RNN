@@ -9,13 +9,12 @@
 local ptb = {}
 
 local stringx = require('pl.stringx')
--- local file = require('pl.file')
 
 local vocab_idx = 0
 local vocab_map = {}
 
 -- Stacks replicated, shifted versions of x_inp
--- into a single matrix of size x_inp:size(1) x batch_size.
+-- into a single matrix of size [x_inp:size(1)/batch_size] x [batch_size]
 local function replicate(x_inp, batch_size)
    local s = x_inp:size(1)
    local x = torch.zeros(torch.floor(s / batch_size), batch_size)
@@ -27,6 +26,10 @@ local function replicate(x_inp, batch_size)
    return x
 end
 
+
+-- turns the data words into numbers in the same dictionary, see example:
+-- data: duralast car battery <eos> silver macbook keyboard <eos> 4 earth sugar snap peas <eos> 4 earth sugar snap peas <eos>  
+-- #s:   1        2   3       4     5      6       7        4     8 9     10    11   12   4     8 9     10    11   12   4
 local function make_dataset(data, fname)
   data = stringx.split(data)
   print(string.format("Loading %s, size of data = %d", fname, #data))
@@ -69,20 +72,20 @@ local function load_data(trainsize, testsize, valsize)
 
   ff:close()
 
-  return make_dataset(traindata), make_dataset(testdata), make_dataset(valdata)
+  return make_dataset(traindata,'train'), make_dataset(testdata,'test'), make_dataset(valdata,'validation')
 end
 
 
-function ptb.get_dataset(batch_size)
+function ptb.get_dataset(batch_size, trainsize, testsize, valsize)
   local traindata, testdata, validdata
-  traindata, testdata, validdata = load_data(40000, 2000, 2000) -- train,test,validate sizes
+  traindata, testdata, validdata = load_data(trainsize, testsize, valsize) -- train,test,validate sizes
   
   local xtrain = replicate(traindata, batch_size)
+  local xval = replicate(validdata, batch_size)
   -- Intentionally we repeat dimensions without offseting.
   -- Pass over this batch corresponds to the fully sequential processing.
   local xtest = testdata:resize(testdata:size(1), 1):expand(testdata:size(1), batch_size)
-  local xval = replicate(validdata, batch_size)
-  
+
   return xtrain,xtest,xval
 end
 

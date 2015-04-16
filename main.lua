@@ -52,7 +52,10 @@ local params = {batch_size=20,
                 vocab_size=10000,
                 max_epoch=4,
                 max_max_epoch=20,
-                max_grad_norm=5}
+                max_grad_norm=5,
+                trainsize=400, 
+                testsize=100, 
+                valsize=100}
 
 local function transfer_data(x)
   return x:cuda()
@@ -79,6 +82,7 @@ local function lstm(i, prev_c, prev_h)
   local next_h           = nn.CMulTable()({out_gate, nn.Tanh()(next_c)})
   return next_c, next_h
 end
+
 
 local function create_network()
   local x                = nn.Identity()()
@@ -107,6 +111,7 @@ local function create_network()
   return transfer_data(module)
 end
 
+
 local function setup()
   print("Creating a RNN LSTM network.")
   local core_network = create_network()
@@ -130,6 +135,7 @@ local function setup()
   model.err = transfer_data(torch.zeros(params.seq_length))
 end
 
+
 local function reset_state(state)
   state.pos = 1
   if model ~= nil and model.start_s ~= nil then
@@ -139,11 +145,13 @@ local function reset_state(state)
   end
 end
 
+
 local function reset_ds()
   for d = 1, #model.ds do
     model.ds[d]:zero()
   end
 end
+
 
 local function fp(state)
   g_replace_table(model.s[0], model.start_s)
@@ -160,6 +168,7 @@ local function fp(state)
   g_replace_table(model.start_s, model.s[params.seq_length])
   return model.err:mean()
 end
+
 
 local function bp(state)
   paramdx:zero()
@@ -184,6 +193,7 @@ local function bp(state)
   paramx:add(paramdx:mul(-params.lr))
 end
 
+
 local function run_valid()
   reset_state(state_valid)
   g_disable_dropout(model.rnns)
@@ -195,6 +205,7 @@ local function run_valid()
   print("Validation set perplexity : " .. g_f3(torch.exp(perp / len)))
   g_enable_dropout(model.rnns)
 end
+
 
 local function run_test()
   reset_state(state_test)
@@ -213,38 +224,50 @@ local function run_test()
   g_enable_dropout(model.rnns)
 end
 
+
 local function main()
   g_init_gpu(arg)
-  local dstrain, dstest,dsval = ptb.get_dataset(params.batch_size)
+  
+  -- load dataset:
+  local dstrain, dstest,dsval = ptb.get_dataset(params.batch_size, params.trainsize, params.testsize, params.valsize)
   state_train = {data=transfer_data(dstrain)}
   state_valid = {data=transfer_data(dsval)}
   state_test =  {data=transfer_data(dstest)}
+  
   print("Network parameters:")
   print(params)
   local states = {state_train, state_valid, state_test}
   for _, state in pairs(states) do
     reset_state(state)
   end
+  
   setup()
+  
   local step = 0
   local epoch = 0
   local total_cases = 0
   local beginning_time = torch.tic()
   local start_time = torch.tic()
+  
   print("Starting training.")
+  
   local words_per_step = params.seq_length * params.batch_size
   local epoch_size = torch.floor(state_train.data:size(1) / params.seq_length)
   local perps
+  
   while epoch < params.max_max_epoch do
     local perp = fp(state_train)
+    
     if perps == nil then
       perps = torch.zeros(epoch_size):add(perp)
     end
+    
     perps[step % epoch_size + 1] = perp
     step = step + 1
     bp(state_train)
     total_cases = total_cases + params.seq_length * params.batch_size
     epoch = step / epoch_size
+    
     if step % torch.round(epoch_size / 10) == 10 then
       local wps = torch.floor(total_cases / torch.toc(start_time))
       local since_beginning = g_d(torch.toc(beginning_time) / 60)
@@ -255,16 +278,19 @@ local function main()
             ', lr = ' ..  g_f3(params.lr) ..
             ', since beginning = ' .. since_beginning .. ' mins.')
     end
+
     if step % epoch_size == 0 then
       run_valid()
       if epoch > params.max_epoch then
           params.lr = params.lr / params.decay
       end
     end
+    
     if step % 33 == 0 then
       cutorch.synchronize()
       collectgarbage()
     end
+
   end
   run_test()
   print("Training is over.")
