@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
--- Demo for generic teradeep detector
--- E. Culurciello, October 2014
--- with help from A. Canziani, JH Jin, A. Dundar, B. Martini
+-- RNN code for Camfind data captioning of images
+-- E. Culurciello, April 2015
+-- code inspiration from: https://github.com/wojzaremba/lstm
 --------------------------------------------------------------------------------
 
 -- Requires --------------------------------------------------------------------
