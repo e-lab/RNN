@@ -22,8 +22,12 @@ else
     LookupTable = nn.LookupTable
 end
 require('nngraph')
+require('image')
 require('base')
 local ptb = require('data')
+require('sys')
+require('env')
+
 
 -- Local definitions -----------------------------------------------------------
 local pf = function(...) print(string.format(...)) end
@@ -36,34 +40,34 @@ local THIS = sys.COLORS.blue .. 'THIS' .. Cn
 -- Title definition -----------------------------------------------------------
 title = [[RNN test for CamFind data]]
 
-
 -- Options ---------------------------------------------------------------------
 opt = lapp(title .. [[
---nt            (default 8)     Number of threads for multiprocessing
+--nt            (default 8)     number of threads for multiprocessing
 --batch_size    (default 20)    processing batch size
 --seq_length    (default 5)     max words in sequence for caption
 --layers        (default 2)     number of layers of RNN
 --decay         (default 1.15)  decay parameter for LSTM
 --rnn_size      (default 200)   RNN number of neurons / LSTM cells
---dropout       (default 0)     Dropout parameter
+--dropout       (default 0)     dropout parameter
 --init_weight   (default 0.04)  initial weights RNN
---lr            (default 1)     Learnin rate
---vocab_size    (default 10000) Vocabolary size for words dictionary
+--lr            (default 1)     learning rate
+--vocab_size    (default 10000) vocabolary size for words dictionary
 --max_epoch     (default 14)    lower learning rate every max_epoch epochs
---max_max_epoch (default 50)    Max epochs in training loop
---max_grad_norm (default 10)    Max gradient normalization
+--max_max_epoch (default 50)    max epochs in training loop
+--max_grad_norm (default 10)    max gradient normalization
 --trainsize     (default 100)   train set size
 --testsize      (default 100)   test set size
 --valsize       (default 100)   validation set size
 ]])
+
+local fname = "/Users/eugenioculurciello/td-hw-sw/td-github/dataset-scripts/camfind/amazon-images/filtered-amazon-images.20140606.tsv"
 
 pf(Cb..title..Cn)
 torch.setdefaulttensortype('torch.FloatTensor')
 torch.setnumthreads(opt.nt)
 print('Number of threads used:', torch.getnumthreads())
 
-
--- functions:
+-- functions ---------------------------------------------------------------------
 
 local function transfer_data(x)
   return x:cuda()
@@ -96,8 +100,7 @@ local function create_network()
   local x                = nn.Identity()()
   local y                = nn.Identity()()
   local prev_s           = nn.Identity()()
-  local i                = {[0] = LookupTable(opt.vocab_size,
-                                                    opt.rnn_size)(x)}
+  local i                = {[0] = LookupTable(opt.vocab_size, opt.rnn_size)(x)}
   local next_s           = {}
   local split         = {prev_s:split(2 * opt.layers)}
   for layer_idx = 1, opt.layers do
@@ -116,6 +119,10 @@ local function create_network()
   local module           = nn.gModule({x, y, prev_s},
                                       {err, nn.Identity()(next_s)})
   module:getParameters():uniform(-opt.init_weight, opt.init_weight)
+  -- setprintlevel(2)
+  -- print({module.fg})
+  -- graph.dot(module.fg,'RNN', 'RNN') -- print and save svg file of RNN
+
   return transfer_data(module)
 end
 
@@ -237,13 +244,12 @@ local function main()
   g_init_gpu(arg)
 
   -- load dataset:
-  local dstrain, dstest,dsval = ptb.get_dataset(opt.batch_size, opt.trainsize, opt.testsize, opt.valsize)
+  local dstrain, dstest,dsval = ptb.get_dataset(fname, opt.batch_size, opt.trainsize, opt.testsize, opt.valsize)
   state_train = {data=transfer_data(dstrain)}
   state_valid = {data=transfer_data(dsval)}
   state_test =  {data=transfer_data(dstest)}
   
-  print("Network parameters:")
-  print(params)
+  print("Network parameters:", opt)
   local states = {state_train, state_valid, state_test}
   for _, state in pairs(states) do
     reset_state(state)
@@ -258,7 +264,6 @@ local function main()
   local start_time = torch.tic()
   
   print("Starting training.")
-  
   local words_per_step = opt.seq_length * opt.batch_size
   local epoch_size = torch.floor(state_train.data:size(1) / opt.seq_length)
   local perps
@@ -301,7 +306,7 @@ local function main()
 
   end
   run_test()
-  print("Training is over.")
+  print("Training completed!")
 end
 
 main()

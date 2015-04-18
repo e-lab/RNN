@@ -1,10 +1,8 @@
---
-----  Copyright (c) 2014, Facebook, Inc.
-----  All rights reserved.
-----
-----  This source code is licensed under the Apache 2 license found in the
-----  LICENSE file in the root directory of this source tree. 
-----
+--------------------------------------------------------------------------------
+-- RNN code for Camfind data captioning of images
+-- E. Culurciello, April 2015
+-- code inspiration from: https://github.com/wojzaremba/lstm
+--------------------------------------------------------------------------------
 
 local ptb = {}
 
@@ -45,9 +43,8 @@ local function make_dataset(data, fname)
 end
 
 
-local function load_data(trainsize, testsize, valsize)
+local function load_data(fname, trainsize, testsize, valsize)
   -- file of caption data:
-  local fname = "/Users/eugenioculurciello/td-hw-sw/td-github/dataset-scripts/camfind/amazon-images/filtered-amazon-images.20140606.tsv"
   local ff = assert(io.open(fname, "r"))
   
   local traindata = ''
@@ -76,9 +73,9 @@ local function load_data(trainsize, testsize, valsize)
 end
 
 
-function ptb.get_dataset(batch_size, trainsize, testsize, valsize)
+function ptb.get_dataset(fname, batch_size, trainsize, testsize, valsize)
   local traindata, testdata, validdata
-  traindata, testdata, validdata = load_data(trainsize, testsize, valsize) -- train,test,validate sizes
+  traindata, testdata, validdata = load_data(fname, trainsize, testsize, valsize) -- train,test,validate sizes
   
   local xtrain = replicate(traindata, batch_size)
   local xval = replicate(validdata, batch_size)

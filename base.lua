@@ -1,10 +1,8 @@
---
---  Copyright (c) 2014, Facebook, Inc.
---  All rights reserved.
---
---  This source code is licensed under the Apache 2 license found in the
---  LICENSE file in the root directory of this source tree. 
---
+--------------------------------------------------------------------------------
+-- RNN code for Camfind data captioning of images
+-- E. Culurciello, April 2015
+-- code inspiration from: https://github.com/wojzaremba/lstm
+--------------------------------------------------------------------------------
 
 function g_disable_dropout(node)
   if type(node) == "table" and node.__typename == nil then
