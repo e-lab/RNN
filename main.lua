@@ -34,6 +34,7 @@ title = [[RNN test / example!]]
 
 -- Options ---------------------------------------------------------------------
 opt = lapp(title .. [[
+--gpuidx        (default 1)     GPU / cuda device to use
 --nt            (default 8)     number of threads for multiprocessing
 --batch_size    (default 20)    processing batch size
 --seq_length    (default 5)     max words in sequence for caption
@@ -140,7 +141,7 @@ local function setup()
   model.err = transfer_data(torch.zeros(opt.seq_length))
 
   -- print / see model graph:
-  if opt.v then
+  if opt.verbose then
     -- setprintlevel(2)
     print({core_network.fg})
     graph.dot(core_network.fg,'RNN', 'RNN') -- print and save svg file of RNN
