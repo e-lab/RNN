@@ -6,27 +6,19 @@
 
 -- Requires --------------------------------------------------------------------
 require 'pl'
-local ok,cunn = pcall(require, 'fbcunn')
-if not ok then
-    ok,cunn = pcall(require,'cunn')
-    if ok then
-        print("warning: fbcunn not found. Falling back to cunn") 
-        LookupTable = nn.LookupTable
-    else
-        print("Could not find cunn or fbcunn. Either is required")
-        os.exit()
-    end
-else
-    deviceParams = cutorch.getDeviceProperties(1)
-    cudaComputeCapability = deviceopt.major + deviceopt.minor/10
+ok,cunn = pcall(require,'cunn')
+if ok then
     LookupTable = nn.LookupTable
+else
+    print("Could not find required cunn library!")
+    os.exit()
 end
 require('nngraph')
 require('image')
 require('base')
 local ptb = require('data')
 require('sys')
-require('env')
+-- require('env')
 
 
 -- Local definitions -----------------------------------------------------------
@@ -38,7 +30,7 @@ local Cn = sys.COLORS.none
 local THIS = sys.COLORS.blue .. 'THIS' .. Cn
 
 -- Title definition -----------------------------------------------------------
-title = [[RNN test for CamFind data]]
+title = [[RNN test / example!]]
 
 -- Options ---------------------------------------------------------------------
 opt = lapp(title .. [[
@@ -58,6 +50,7 @@ opt = lapp(title .. [[
 --trainsize     (default 100)   train set size
 --testsize      (default 100)   test set size
 --valsize       (default 100)   validation set size
+--verbose                       verbosity of main code output
 ]])
 
 local fname = "/Users/eugenioculurciello/td-hw-sw/td-github/dataset-scripts/camfind/amazon-images/filtered-amazon-images.20140606.tsv"
@@ -119,9 +112,6 @@ local function create_network()
   local module           = nn.gModule({x, y, prev_s},
                                       {err, nn.Identity()(next_s)})
   module:getParameters():uniform(-opt.init_weight, opt.init_weight)
-  -- setprintlevel(2)
-  -- print({module.fg})
-  -- graph.dot(module.fg,'RNN', 'RNN') -- print and save svg file of RNN
 
   return transfer_data(module)
 end
@@ -148,6 +138,13 @@ local function setup()
   model.rnns = g_cloneManyTimes(core_network, opt.seq_length)
   model.norm_dw = 0
   model.err = transfer_data(torch.zeros(opt.seq_length))
+
+  -- print / see model graph:
+  if opt.v then
+    -- setprintlevel(2)
+    print({core_network.fg})
+    graph.dot(core_network.fg,'RNN', 'RNN') -- print and save svg file of RNN
+  end
 end
 
 
