@@ -10,7 +10,7 @@ ok,cunn = pcall(require,'cunn')
 if ok then
     LookupTable = nn.LookupTable
 else
-    print("Could not find required cunn library!")
+    print("GPU / cunn library is required!")
     os.exit()
 end
 require('nngraph')
@@ -19,7 +19,6 @@ require('base')
 local ptb = require('data')
 require('sys')
 -- require('env')
-
 
 -- Local definitions -----------------------------------------------------------
 local pf = function(...) print(string.format(...)) end
@@ -34,24 +33,24 @@ title = [[RNN test / example!]]
 
 -- Options ---------------------------------------------------------------------
 opt = lapp(title .. [[
---gpuidx        (default 1)     GPU / cuda device to use
---nt            (default 8)     number of threads for multiprocessing
---batch_size    (default 20)    processing batch size
---seq_length    (default 5)     max words in sequence for caption
---layers        (default 2)     number of layers of RNN
---decay         (default 1.15)  decay parameter for LSTM
---rnn_size      (default 200)   RNN number of neurons / LSTM cells
---dropout       (default 0)     dropout parameter
---init_weight   (default 0.04)  initial weights RNN
---lr            (default 1)     learning rate
---vocab_size    (default 10000) vocabolary size for words dictionary
---max_epoch     (default 14)    lower learning rate every max_epoch epochs
---max_max_epoch (default 50)    max epochs in training loop
---max_grad_norm (default 10)    max gradient normalization
---trainsize     (default 100)   train set size
---testsize      (default 100)   test set size
---valsize       (default 100)   validation set size
---verbose                       verbosity of main code output
+--gpuidx        (default 1)       GPU / cuda device to use
+--nt            (default 8)       number of threads for cpu multiprocessing
+--batch_size    (default 20)      processing batch size
+--seq_length    (default 5)       max words in sequence for caption
+--layers        (default 2)       number of layers of RNN
+--decay         (default 1.15)    decay parameter for LSTM
+--rnn_size      (default 200)     RNN number of neurons / LSTM cells
+--dropout       (default 0)       dropout parameter
+--init_weight   (default 0.04)    initial weights RNN
+--lr            (default 1)       learning rate
+--vocab_size    (default 10000)   vocabolary size for words dictionary
+--max_epoch     (default 20)      lower learning rate every max_epoch epochs
+--max_max_epoch (default 100)     max epochs in training loop
+--max_grad_norm (default 10)      max gradient normalization
+--trainsize     (default 10000)   train set size
+--testsize      (default 1000)    test set size
+--valsize       (default 1000)    validation set size
+--verbose                         verbosity of main code output
 ]])
 
 local fname = "/Users/eugenioculurciello/td-hw-sw/td-github/dataset-scripts/camfind/amazon-images/filtered-amazon-images.20140606.tsv"
@@ -94,9 +93,9 @@ local function create_network()
   local x                = nn.Identity()()
   local y                = nn.Identity()()
   local prev_s           = nn.Identity()()
-  local i                = {[0] = LookupTable(opt.vocab_size, opt.rnn_size)(x)}
+  local i                = {[0] = LookupTable(opt.vocab_size, opt.rnn_size)(x)} -- give indices, return words in vocabulary
   local next_s           = {}
-  local split         = {prev_s:split(2 * opt.layers)}
+  local split         = {prev_s:split(2 * opt.layers)} -- x:split(N) is used to create N ouputs
   for layer_idx = 1, opt.layers do
     local prev_c         = split[2 * layer_idx - 1]
     local prev_h         = split[2 * layer_idx]
@@ -142,9 +141,9 @@ local function setup()
 
   -- print / see model graph:
   if opt.verbose then
-    -- setprintlevel(2)
-    print({core_network.fg})
-    graph.dot(core_network.fg,'RNN', 'RNN') -- print and save svg file of RNN
+    setprintlevel(2)
+    print({model.core_network.fg})
+    graph.dot(model.core_network.fg,'RNN forward graph', 'RNN') -- print and save svg file of RNN
   end
 end
 
@@ -284,9 +283,9 @@ local function main()
       local since_beginning = g_d(torch.toc(beginning_time) / 60)
       print('epoch = ' .. g_f3(epoch) ..
             ', train perp. = ' .. g_f3(torch.exp(perps:mean())) ..
-            ', wps = ' .. wps ..
+            ', wps = ' .. wps .. -- words per second
             ', dw:norm() = ' .. g_f3(model.norm_dw) ..
-            ', lr = ' ..  g_f3(opt.lr) ..
+            ', lr = ' ..  g_f3(opt.lr) .. -- learning rate
             ', since beginning = ' .. since_beginning .. ' mins.')
     end
 
