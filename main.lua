@@ -16,7 +16,7 @@ end
 require('nngraph')
 require('image')
 require('base')
-local ptb = require('data')
+local datain = require('data')
 require('sys')
 -- require('env')
 
@@ -241,7 +241,7 @@ local function main()
   g_init_gpu(arg)
 
   -- load dataset:
-  local dstrain, dstest,dsval = ptb.get_dataset(fname, opt.batch_size, opt.trainsize, opt.testsize, opt.valsize)
+  local dstrain, dstest,dsval = datain.get_dataset(fname, opt.batch_size, opt.trainsize, opt.testsize, opt.valsize)
   state_train = {data=transfer_data(dstrain)}
   state_valid = {data=transfer_data(dsval)}
   state_test =  {data=transfer_data(dstest)}

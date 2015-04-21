@@ -4,12 +4,14 @@
 -- code inspiration from: https://github.com/wojzaremba/lstm
 --------------------------------------------------------------------------------
 
-local ptb = {}
+local datain = {}
 
 local stringx = require('pl.stringx')
-
-local vocab_idx = 0
-local vocab_map = {}
+ 
+datain.vocab = {} -- vocabulary object
+datain.vocab.idx = 0 -- size of vocabulary
+datain.vocab.map = {} -- word embeddings
+datain.vocab.words = {} -- words
 
 -- Stacks replicated, shifted versions of x_inp
 -- into a single matrix of size [x_inp:size(1)/batch_size] x [batch_size]
@@ -29,15 +31,17 @@ end
 -- data: duralast car battery <eos> silver macbook keyboard <eos> 4 earth sugar snap peas <eos> 4 earth sugar snap peas <eos>  
 -- #s:   1        2   3       4     5      6       7        4     8 9     10    11   12   4     8 9     10    11   12   4
 local function make_dataset(data, fname)
+  local vocab = datain.vocab
   data = stringx.split(data)
   print(string.format("Loading %s, size of data = %d", fname, #data))
   local x = torch.zeros(#data)
   for i = 1, #data do
-    if vocab_map[data[i]] == nil then
-      vocab_idx = vocab_idx + 1
-      vocab_map[data[i]] = vocab_idx
+    if vocab.map[data[i]] == nil then
+      vocab.idx = vocab.idx + 1
+      vocab.map[data[i]] = vocab.idx
+      vocab.words[vocab.idx] = data[i] 
     end
-    x[i] = vocab_map[data[i]]
+    x[i] = vocab.map[data[i]]
   end
   return x
 end
@@ -73,7 +77,7 @@ local function load_data(fname, trainsize, testsize, valsize)
 end
 
 
-function ptb.get_dataset(fname, batch_size, trainsize, testsize, valsize)
+function datain.get_dataset(fname, batch_size, trainsize, testsize, valsize)
   local traindata, testdata, validdata
   traindata, testdata, validdata = load_data(fname, trainsize, testsize, valsize) -- train,test,validate sizes
   
@@ -86,4 +90,4 @@ function ptb.get_dataset(fname, batch_size, trainsize, testsize, valsize)
   return xtrain,xtest,xval
 end
 
-return ptb
+return datain
