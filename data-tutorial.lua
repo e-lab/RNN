@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------
--- RNN code for Camfind data captioning of images
+-- RNN code for learning simple sentences
 -- E. Culurciello, April 2015
 -- code inspiration from: https://github.com/wojzaremba/lstm
 --------------------------------------------------------------------------------
