@@ -1,10 +1,14 @@
-Long Short Term Memory Units
+RNN demonstrations
 ============================
-This is self-contained package to train a language model on word level Penn Tree Bank dataset. 
-It achieves 115 perplexity for a small model in 1h, and 81 perplexity for a big model in 
-a day. Model ensemble of 38 big models gives 69 perplexity.
-This code is derived from https://github.com/wojciechz/learning_to_execute (the same author, but 
-a different company).
 
 
+### Tutorial
+`tutoria.lua` is a demonstration of RNN with LSTM module to learn simple sentences.
+
+#### Main/Run
+`run.lua` is an example of learning CamFind dataset captions. 
+
+
+
+This code is derived from https://github.com/wojzaremba/lstm.
 More information: http://arxiv.org/pdf/1409.2329v4.pdf
