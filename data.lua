@@ -56,11 +56,12 @@ local function load_data(fname, trainsize, testsize, valsize)
   local valdata = ''
 
   ff:read() -- skip 1st line of junk
+  if opt.verbose then print('Captions:') end
   for i = 1, trainsize+testsize+valsize do
     local line = ff:read()
     a, caption  = stringx.splitv(line, '\t')
     caption = caption .. ' <eos> ' -- notice spaces on both side, so <eos> is like a word!!!!
-    -- print(i, 'Caption:', caption)
+    if opt.verbose then print(i, caption) end
 
     if i <= trainsize then 
       traindata = traindata .. caption
@@ -82,6 +83,10 @@ function datain.get_dataset(fname, batch_size, trainsize, testsize, valsize)
   traindata, testdata, validdata = load_data(fname, trainsize, testsize, valsize) -- train,test,validate sizes
   
   local xtrain = replicate(traindata, batch_size)
+  if opt.verbose then
+    print('Dictionary:', datain.vocab.words)
+    print('training set:') print(xtrain)
+  end
   local xval = replicate(validdata, batch_size)
   -- Intentionally we repeat dimensions without offseting.
   -- Pass over this batch corresponds to the fully sequential processing.
